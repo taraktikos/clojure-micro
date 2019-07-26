@@ -1,1 +1,0 @@
-taras@adms-MacBook-Pro.local.11608
