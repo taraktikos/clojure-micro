@@ -14,7 +14,29 @@
   [request]
   (ring-resp/response "Hello World!"))
 
-;; -> 
+(def mock-project-collection {
+                              :project1 {
+                                         :name "Test"
+                                         }
+                              :project2 {
+                                         :name "Project2"
+                                         }
+                              })
+
+(defn get-projects
+  [request]
+  (http/json-response mock-project-collection))
+
+(defn get-project
+  [request]
+  (let [projname (get-in request [:path-params :project-name])]
+    (http/json-response ((keyword projname) mock-project-collection))))
+
+(defn add-project
+  [request]
+  (prn (:json-params request))
+  (ring-resp/created "http://fake-201-url" "fake 201 body"))
+
 ;; Defines "/" and "/about" routes with their associated :get handlers.
 ;; The interceptors defined after the verb map (e.g., {:get home-page}
 ;; apply to / and its children (/about).
@@ -22,6 +44,9 @@
 
 ;; Tabular routes
 (def routes #{["/" :get (conj common-interceptors `home-page)]
+              ["/projects" :get get-projects :route-name :get-projects]
+              ["/projects" :post add-project :route-name :add-project]
+              ["/projects/:project-name" :get get-project :route-name :get-project]
               ["/about" :get (conj common-interceptors `about-page)]})
 
 ;; Map-based routes
