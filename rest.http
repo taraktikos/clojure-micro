@@ -1,0 +1,15 @@
+# Test request
+GET http://localhost:8090
+Content-Type: application/json
+
+# about
+GET http://localhost:8090/about
+Content-Type: application/json
+
+# about
+GET http://localhost:8090
+Content-Type: application/json
+
+# Another test request
+GET https://api.github.com
+User-Agent: Emacs Restclient
