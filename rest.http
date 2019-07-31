@@ -15,7 +15,7 @@ GET http://localhost:8090/projects
 Content-Type: application/json
 
 # about
-GET http://localhost:8090/projects/project1
+GET http://localhost:8090/projects/n1
 Content-Type: application/json
 
 # about
@@ -23,7 +23,9 @@ POST http://localhost:8090/projects
 Content-Type: application/json
 
 {
-  "test": "test"
+  "name": "name",
+  "test": "test",
+  "proj-name": "n1"
 }
 
 

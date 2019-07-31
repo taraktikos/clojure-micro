@@ -2,7 +2,11 @@
   (:require [io.pedestal.http :as http]
             [io.pedestal.http.route :as route]
             [io.pedestal.http.body-params :as body-params]
-            [ring.util.response :as ring-resp]))
+            [ring.util.response :as ring-resp]
+
+            [monger.core :as mg]
+            [monger.collection :as mc]
+            [monger.json]))
 
 (defn about-page
   [request]
@@ -12,7 +16,21 @@
 
 (defn home-page
   [request]
-  (ring-resp/response "Hello World!"))
+  (ring-resp/response (format "Clojure %s - served from %s"
+                              (clojure-version)
+                              (route/url-for ::home-page))))
+
+
+(defn get-projects
+  [request]
+  (let [uri (System/getenv "MONGO_CONNECTION")
+        {:keys [conn db]} (mg/connect-via-uri uri)]
+    (http/json-response (mc/find-maps db "project-catalog"))))
+
+(defn db-get-project [proj-name]
+  (let [connect-string (System/getenv "MONGO_CONNECTION")
+        {:keys [conn db]} (mg/connect-via-uri connect-string)]
+    (mc/find-maps db "project-catalog" {:proj-name proj-name})))
 
 (def mock-project-collection {
                               :project1 {
@@ -23,19 +41,17 @@
                                          }
                               })
 
-(defn get-projects
-  [request]
-  (http/json-response mock-project-collection))
-
 (defn get-project
   [request]
-  (let [projname (get-in request [:path-params :project-name])]
-    (http/json-response ((keyword projname) mock-project-collection))))
+  (http/json-response
+   (db-get-project (get-in request [:path-params :proj-name]))))
 
 (defn add-project
   [request]
-  (prn (:json-params request))
-  (ring-resp/created "http://fake-201-url" "fake 201 body"))
+  (let [incoming (:json-params request)
+        connect-string (System/getenv "MONGO_CONNECTION")
+        {:keys [conn db]} (mg/connect-via-uri connect-string)]
+    (ring-resp/created "http://resurl" (mc/insert-and-return db "project-catalog" incoming))))
 
 ;; Defines "/" and "/about" routes with their associated :get handlers.
 ;; The interceptors defined after the verb map (e.g., {:get home-page}
@@ -45,8 +61,8 @@
 ;; Tabular routes
 (def routes #{["/" :get (conj common-interceptors `home-page)]
               ["/projects" :get get-projects :route-name :get-projects]
-              ["/projects" :post add-project :route-name :add-project]
-              ["/projects/:project-name" :get get-project :route-name :get-project]
+              ["/projects" :post (conj common-interceptors `add-project) :route-name :add-project]
+              ["/projects/:proj-name" :get (conj common-interceptors `get-project) :route-name :get-project]
               ["/about" :get (conj common-interceptors `about-page)]})
 
 ;; Map-based routes
